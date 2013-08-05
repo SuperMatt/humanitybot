@@ -43,14 +43,18 @@ def actioner(g, line, username, channel, gamechannel):
             messages.append({"message": "No players have joined the game", "channel": gamechannel})
 
     elif lower == "join":
-        player = g.getPlayerByName(username)
-        if not username in g.players:
+        newplayer = g.getPlayerByName(username)
+        block = 0
+        for player in g.players:
+            if username == player.username:
+                block = 1
+        if block == 1:
+            messages.append({"message": "Error, cannot join game, you're already in it", "channel": gamechannel})
+        else:
             newPlayer = Player(username)
             g.players.append(newPlayer)
             messages.append({"message": "%s joined the game" %username, "channel": gamechannel})
             g.dealCards()
-        else:
-            messages.append({"message": "Error, cannot join game, you're already in it", "channel": gamechannel})
 
     elif lower == "part":
         for player in g.players:
@@ -118,7 +122,8 @@ def gameLogic(g, line, username, channel, gamechannel):
         messages.append({"message": "The Card Czar is %s" %czar.username, "channel": gamechannel})
         g.dealCards()
         for player in g.players:
-            messages += player.printCards()
+            if not czar == player:
+                messages += player.printCards()
         g.blackcard = g.bcards.pop(0)
         messages.append({"message": g.blackcard, "channel": gamechannel})
         g.waitPlayers = 1
@@ -126,7 +131,7 @@ def gameLogic(g, line, username, channel, gamechannel):
     elif g.waitPlayers > 0:
         #print g.playedCards
         if g.waitPlayers == 1:
-            messages.append({"message": "The Players must each pick a card", "channel": gamechannel})
+            messages.append({"message": "The Players must each pick a card, by messaging the number to humanitybot", "channel": gamechannel})
             g.waitPlayers = 2
         if len(g.playedCards) == len(g.players) - 1:
             g.waitPlayers = 0
@@ -145,7 +150,8 @@ def gameLogic(g, line, username, channel, gamechannel):
     elif g.waitCzar > 0:
         if g.waitCzar == 1:
             shuffle(g.playedCards)
-            messages.append({"message": "The Czar must pick a card", "channel": gamechannel})
+            messages.append({"message": "The Czar, %s, must pick a card" % g.players[g.czar].username, "channel": gamechannel})
+            messages.append({"message": g.blackcard, "channel": gamechannel})
             i = 1
             spacer = "  "
             for card in g.playedCards:
@@ -160,8 +166,7 @@ def gameLogic(g, line, username, channel, gamechannel):
                 if cardID < len(g.playedCards) and cardID >= 0:
                     cardText = g.playedCards[cardID]["card"]
                     cardOwner = g.playedCards[cardID]["owner"]
-                    messages.append({"message": "Czar picked card %s: %s" %(cardID + 1, cardText), "channel": gamechannel})
-                    messages.append({"message": "%s won the round!" %cardOwner.username, "channel": gamechannel})
+                    messages.append({"message": "The Czar picked card %s: %s. %s has won the round!" %(cardID + 1, cardText, cardOwner.username), "channel": gamechannel})
                     cardOwner.score += 1
                     g.waitCzar = 0
                     g.newround += 1
@@ -181,12 +186,11 @@ class Player():
     def printCards(self):
         messages = [{"message": "Your cards are:", "channel": self.username}]
         i = 1
+        cards = ""
         for card in self.hand:
-            spacer = "  "
-            if i == 10:
-                spacer = " "
-            messages.append({"message": "%s)%s%s" % (i,spacer,card), "channel": self.username})
+            cards += "%s) %s " % (i,card)
             i += 1
+        messages.append({"message": cards, "channel": self.username})
         return messages
 
 
