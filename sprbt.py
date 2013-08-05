@@ -111,6 +111,7 @@ class IRCConnector( threading.Thread):
             if len(self.allmessages) > 0:
                 newtime = self.lastmessage + timedelta(milliseconds = self.pulsetime)
                 if timestamp > newtime:
+                    #print self.allmessages
                     currmess = self.allmessages.pop(0)
                     self.say(currmess)
                     self.lastmessage = timestamp

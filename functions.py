@@ -56,15 +56,15 @@ def actioner(g, line, username, channel, gamechannel):
             messages.append({"message": "%s joined the game" %username, "channel": gamechannel})
             g.dealCards()
 
-    elif lower == "part":
-        for player in g.players:
-            if player.username == username:
-                g.players.remove(player)
-                messages.append({"message": "%s left the game" %username, "channel": gamechannel})
+    # elif lower == "part":
+    #     for player in g.players:
+    #         if player.username == username:
+    #             g.players.remove(player)
+    #             messages.append({"message": "%s left the game" %username, "channel": gamechannel})
 
     elif lower == "czar":
         if g.inprogress:
-            messages.append({"message": "The Card Czar is %s" %g.players[g.czar].username, "channel": gamechannel})
+            messages.append({"message": "The Card Czar is %s" %g.czar.username, "channel": gamechannel})
         else:
             messages.append({"message": "There is no Card Czar yet", "channel": gamechannel})
     elif lower[:5] == "kill ":
@@ -114,17 +114,18 @@ def gameLogic(g, line, username, channel, gamechannel):
             g.inprogress = True
             messages.append({"message": "Starting game now!", "channel": gamechannel})
 
-    elif not g.newround == g.round:
+    elif g.newround > g.round:
+        if not g.czar:
+            g.czar = g.players[0]
         mess = "Starting round %s" % g.newround
-        messages.append({"message": mess, "channel": gamechannel})
         g.round = g.newround
-        czar = g.players[g.czar]
-        messages.append({"message": "The Card Czar is %s" %czar.username, "channel": gamechannel})
+        messages.append({"message": "Starting round %s. The Card Czar is %s" %(g.newround, g.czar.username), "channel": gamechannel})
         g.dealCards()
-        for player in g.players:
-            if not czar == player:
-                messages += player.printCards()
         g.blackcard = g.bcards.pop(0)
+        for player in g.players:
+            if not g.czar == player:
+                messages += [{"message": g.blackcard, "channel": player.username}]
+                messages += player.printCards()
         messages.append({"message": g.blackcard, "channel": gamechannel})
         g.waitPlayers = 1
 
@@ -137,7 +138,7 @@ def gameLogic(g, line, username, channel, gamechannel):
             g.waitPlayers = 0
             g.waitCzar = 1
         elif line:
-            if re.search("^[0-9]+$", line) and not username == g.players[g.czar].username:
+            if re.search("^[0-9]+$", line) and not username == g.czar.username:
                 id = int(line)
                 print id
                 if id == 0:
@@ -150,7 +151,7 @@ def gameLogic(g, line, username, channel, gamechannel):
     elif g.waitCzar > 0:
         if g.waitCzar == 1:
             shuffle(g.playedCards)
-            messages.append({"message": "The Czar, %s, must pick a card" % g.players[g.czar].username, "channel": gamechannel})
+            messages.append({"message": "The Czar, %s, must pick a card" % g.czar.username, "channel": gamechannel})
             messages.append({"message": g.blackcard, "channel": gamechannel})
             i = 1
             spacer = "  "
@@ -161,19 +162,25 @@ def gameLogic(g, line, username, channel, gamechannel):
                 i += 1
             g.waitCzar = 2
         elif line and g.waitCzar == 2:
-            if re.search("^[0-9]+$", line) and username == g.players[g.czar].username:
+            if re.search("^[0-9]+$", line) and username == g.czar.username:
                 cardID = int(line) - 1
                 if cardID < len(g.playedCards) and cardID >= 0:
                     cardText = g.playedCards[cardID]["card"]
                     cardOwner = g.playedCards[cardID]["owner"]
-                    messages.append({"message": "The Czar picked card %s: %s. %s has won the round!" %(cardID + 1, cardText, cardOwner.username), "channel": gamechannel})
+                    messages.append({"message": "The Czar picked card %s: %s %s has won the round!" %(cardID + 1, cardText, cardOwner.username), "channel": gamechannel})
                     cardOwner.score += 1
                     g.waitCzar = 0
                     g.newround += 1
                     g.playedCards = []
-                    g.czar += 1
-                    if g.czar > len(g.players) -1:
-                        g.czar = 0
+                    i = 0
+                    for player in g.players:
+                        if player == g.czar:
+                            czarid = i
+                        i += 1
+                    czarid +=1
+                    if czarid > len(g.players) -1:
+                        czarid = 0
+                    g.czar = g.players[czarid]
 
     return messages
 
@@ -205,7 +212,7 @@ class Game():
         self.round = 0
         self.newround = 1
         self.played = []
-        self.czar = 0
+        self.czar = None
         self.wcards = cards.wcards()
         self.bcards = cards.bcards()
         self.bcards2 = cards.bcards2()
