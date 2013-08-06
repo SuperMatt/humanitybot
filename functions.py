@@ -121,10 +121,14 @@ def gameLogic(g, line, username, channel, gamechannel):
         g.round = g.newround
         messages.append({"message": "Starting round %s. The Card Czar is %s" %(g.newround, g.czar.username), "channel": gamechannel})
         g.dealCards()
-        g.blackcard = g.bcards.pop(0)
+        blackcard = g.allbcards.pop(0)
+        g.blackcard = blackcard["card"]
+        g.blacktype = blackcard["type"]
         for player in g.players:
             if not g.czar == player:
                 messages += [{"message": g.blackcard, "channel": player.username}]
+                if g.blacktype == 2:
+                    messages.append({"message": "Please select your cards by typing in the format x y", "channel": player.username})
                 messages += player.printCards()
         messages.append({"message": g.blackcard, "channel": gamechannel})
         g.waitPlayers = 1
@@ -133,21 +137,43 @@ def gameLogic(g, line, username, channel, gamechannel):
         #print g.playedCards
         if g.waitPlayers == 1:
             messages.append({"message": "The Players must each pick a card, by messaging the number to humanitybot", "channel": gamechannel})
+            if g.blacktype == 2:
+                messages.append({"message": "Please select your cards by typing in the format x y", "channel": gamechannel})
             g.waitPlayers = 2
         if len(g.playedCards) == len(g.players) - 1:
             g.waitPlayers = 0
             g.waitCzar = 1
         elif line:
-            if re.search("^[0-9]+$", line) and not username == g.czar.username:
-                id = int(line)
-                print id
-                if id == 0:
-                    id = 10
-                id -= 1
-                if id < 10 and id >= 0:
-                    player = g.getPlayerByName(username)
-                    card = player.hand.pop(id)
-                    g.playedCards.append({"card": card, "owner": player})
+            if g.blacktype == 1:
+                if re.search("^[0-9]+$", line) and not username == g.czar.username:
+                    id = int(line)
+                    if id == 0:
+                        id = 10
+                    id -= 1
+                    if id < 10 and id >= 0:
+                        player = g.getPlayerByName(username)
+                        card = player.hand.pop(id)
+                        messages += [{"message": "Thank you for playing %s" %(card), "channel": player.username}]
+                        g.playedCards.append({"card": card, "owner": player})
+            elif g.blacktype == 2:
+                if re.search("^[0-9]+ [0-9]+$", line) and not username == g.czar.username:
+                    ids = line.split()
+                    id1 = int(ids[0])
+                    id2 = int(ids[1])
+                    if id1 == 0:
+                        id1 = 10
+                    id1 -= 1
+                    if id2 == 0:
+                        id2 = 10
+                    id2 -= 1
+                    if id1 < 10 and id1 >= 0 and id2 < 10 and id2 >=0:
+                        player = g.getPlayerByName(username)
+                        card1 = player.hand[id1]
+                        card2 = player.hand[id2]
+                        messages += [{"message": "Thank you for playing %s / %s" %(card1, card2), "channel": player.username}]
+                        g.playedCards.append({"card": "%s / %s" %(card1, card2), "owner": player})
+                        player.hand.remove(card1)
+                        player.hand.remove(card2)
     elif g.waitCzar > 0:
         if g.waitCzar == 1:
             shuffle(g.playedCards)
@@ -216,10 +242,16 @@ class Game():
         self.wcards = cards.wcards()
         self.bcards = cards.bcards()
         self.bcards2 = cards.bcards2()
+        self.allbcards = []
         self.playedCards = []
         self.blackcard = None
+        self.blacktype = None
+        for card in self.bcards:
+            self.allbcards += [{"card": card, "type": 1}]
+        for card in self.bcards2:
+            self.allbcards += [{"card": card, "type": 2}]
         shuffle(self.wcards)
-        shuffle(self.bcards)
+        shuffle(self.allbcards)
 
     def stop(self):
         self.__init__()
