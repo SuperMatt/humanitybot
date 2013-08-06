@@ -130,6 +130,7 @@ def gameLogic(g, line, username, channel, gamechannel):
                 if g.blacktype == 2:
                     messages.append({"message": "Please select your cards by typing in the format x y", "channel": player.username})
                 messages += player.printCards()
+        g.setTopic()
         messages.append({"message": g.blackcard, "channel": gamechannel})
         g.waitPlayers = 1
 
@@ -229,7 +230,7 @@ class Player():
 
 
 class Game():
-    def __init__(self):
+    def __init__(self, s):
         self.inprogress = False
         self.players = []
         self.starttime = None
@@ -252,9 +253,10 @@ class Game():
             self.allbcards += [{"card": card, "type": 2}]
         shuffle(self.wcards)
         shuffle(self.allbcards)
+        self.threadDetails = s
 
     def stop(self):
-        self.__init__()
+        self.__init__(self.threadDetails)
     #    self.inprogress = False
     #    self.starttime = None
     #    self.players = []
@@ -268,6 +270,7 @@ class Game():
     #    self.newround = 1
     #    
     #    shuffle(self.wcards)
+        self.threadDetails.s.send("TOPIC %s :Welcome to Chat Against Humanity. Visit http://cah.supermatt.net for a list of commands.\n" %(self.threadDetails.channel))
         
         return "Stopping game"
     def dealCards(self):
@@ -283,4 +286,7 @@ class Game():
             if player.username == username:
                 return player
         return False
+
+    def setTopic(self):
+        self.threadDetails.s.send("TOPIC %s :%s" %(self.threadDetails.channel, self.blackcard))
 

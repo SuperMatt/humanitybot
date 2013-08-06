@@ -47,7 +47,7 @@ class IRCConnector( threading.Thread):
         self.s.send(message1)
         self.s.send(message2)
 
-        g = functions.Game()
+        g = functions.Game(self)
 
 
         while 1:
@@ -72,6 +72,7 @@ class IRCConnector( threading.Thread):
                 if re.search(":End of /MOTD command.", line):
                         joinchannel = "JOIN %s\n" %self.channel
                         self.output(joinchannel)
+                        self.s.send("PRIVMSG nickserv :identify hum4n1ty\n")
                         self.s.send(joinchannel)
                         self.inchannel = True
 
