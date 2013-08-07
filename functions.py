@@ -55,6 +55,9 @@ def actioner(g, line, username, channel, gamechannel):
             g.players.append(newPlayer)
             messages.append({"message": "%s joined the game" %username, "channel": gamechannel})
             g.dealCards()
+            if g.inprogress:
+                messages += [{"message": g.blackcard, "channel": username}]
+                messages += newPlayer.printCards()
 
     # elif lower == "part":
     #     for player in g.players:
@@ -117,22 +120,27 @@ def gameLogic(g, line, username, channel, gamechannel):
     elif g.newround > g.round:
         if not g.czar:
             g.czar = g.players[0]
-        mess = "Starting round %s" % g.newround
         g.round = g.newround
-        messages.append({"message": "Starting round %s. The Card Czar is %s" %(g.newround, g.czar.username), "channel": gamechannel})
-        g.dealCards()
-        blackcard = g.allbcards.pop(0)
-        g.blackcard = blackcard["card"]
-        g.blacktype = blackcard["type"]
-        for player in g.players:
-            if not g.czar == player:
-                messages += [{"message": g.blackcard, "channel": player.username}]
-                if g.blacktype == 2:
-                    messages.append({"message": "Please select your cards by typing in the format x y", "channel": player.username})
-                messages += player.printCards()
-        g.setTopic()
-        messages.append({"message": g.blackcard, "channel": gamechannel})
-        g.waitPlayers = 1
+        if len(g.allbcards) > 0:
+            messages.append({"message": "Starting round %s. The Card Czar is %s" %(g.newround, g.czar.username), "channel": gamechannel})
+            g.dealCards()
+            blackcard = g.allbcards.pop(0)
+            g.blackcard = blackcard["card"]
+            g.blacktype = blackcard["type"]
+            for player in g.players:
+                if not g.czar == player:
+                    messages += [{"message": g.blackcard, "channel": player.username}]
+                    if g.blacktype == 2:
+                        messages.append({"message": "Please select your cards by typing in the format x y", "channel": player.username})
+                    messages += player.printCards()
+            g.setTopic()
+            messages.append({"message": g.blackcard, "channel": gamechannel})
+            g.waitPlayers = 1
+        else:
+            messages.append({"message": "The game is over! The final scores are as follows:", "channel": channel})
+            for player in g.players:
+                messages.append({"message": "%s: %s" %(player.username, player.score), "channel": channel})
+            g.stop()
 
     elif g.waitPlayers > 0:
         #print g.playedCards
@@ -198,6 +206,7 @@ def gameLogic(g, line, username, channel, gamechannel):
                     cardOwner.score += 1
                     g.waitCzar = 0
                     g.newround += 1
+                    g.discardedCards.append(g.playedCards)
                     g.playedCards = []
                     i = 0
                     for player in g.players:
@@ -235,7 +244,7 @@ class Game():
         self.players = []
         self.starttime = None
         self.inchannel = False
-        self.minplayers = 3
+        self.minplayers = 2
         self.round = 0
         self.newround = 1
         self.played = []
@@ -245,6 +254,7 @@ class Game():
         self.bcards2 = cards.bcards2()
         self.allbcards = []
         self.playedCards = []
+        self.discardedCards = []
         self.blackcard = None
         self.blacktype = None
         for card in self.bcards:
@@ -277,6 +287,10 @@ class Game():
         for player in self.players:
             toDeal = 10 - len(player.hand)
             while toDeal > 0:
+                if len(self.wcards) == 0:
+                    shuffle(self.discardedCards)
+                    self.wcards = self.discardedCards
+                    self.discardedCards = []
                 card = self.wcards.pop()
                 player.hand.append(card)
                 toDeal -= 1
@@ -288,5 +302,5 @@ class Game():
         return False
 
     def setTopic(self):
-        self.threadDetails.s.send("TOPIC %s :%s" %(self.threadDetails.channel, self.blackcard))
+        self.threadDetails.s.send("TOPIC %s :%s\n" %(self.threadDetails.channel, self.blackcard))
 

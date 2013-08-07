@@ -76,6 +76,16 @@ class IRCConnector( threading.Thread):
                         self.s.send(joinchannel)
                         self.inchannel = True
 
+                if re.search("^:.* NICK .*$", line):
+                    nicksplit = line.split()
+                    oldnickstring = nicksplit[0][1:]
+                    oldnicklist = oldnickstring.split("!")
+                    oldnick = oldnicklist[0]
+                    newnick = nicksplit[2][1:]
+                    for player in g.players:
+                        if player.username == oldnick:
+                            player.username = newnick
+
                 if re.search("PRIVMSG", line):
                     details = line.split()
                     user = details[0].split("!")
