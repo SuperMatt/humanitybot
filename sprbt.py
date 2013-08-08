@@ -58,6 +58,7 @@ class IRCConnector( threading.Thread):
             ready = select.select([self.s], [], [], 0.1)
             if ready[0]:
                 line = self.s.recv(250)
+                print line
 
             if line:
 
@@ -86,6 +87,15 @@ class IRCConnector( threading.Thread):
                     for player in g.players:
                         if player.username == oldnick:
                             player.username = newnick
+
+                if re.search("^:.* QUIT .*$", line) or re.search("^:.* PART .*$", line):
+                    split1 = line.split()
+                    split2 = split1[0].split("!")
+                    username = split2[0][1:]
+                    print username
+                    message = g.part(username)
+                    if message:
+                        self.allmessages.append({"message": message, "channel": self.channel})
 
                 if re.search("PRIVMSG", line):
                     details = line.split()

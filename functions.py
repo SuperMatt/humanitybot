@@ -61,7 +61,8 @@ def actioner(g, line, username, channel, gamechannel):
 
     elif lower == "part":
         message = g.part(username)
-        messages += [{"message": message, "channel": gamechannel}]
+        if message:
+            messages += [{"message": message, "channel": gamechannel}]
 
     elif lower == "czar":
         if g.inprogress:
@@ -132,7 +133,7 @@ def gameLogic(g, line, username, channel, gamechannel):
                     if g.blacktype == 2:
                         messages.append({"message": "Please select your cards by typing in the format x y", "channel": player.username})
                     messages += player.printCards()
-            g.setTopic()
+            #g.setTopic()
             messages.append({"message": g.blackcard, "channel": gamechannel})
             g.waitPlayers = 1
         else:
@@ -279,7 +280,7 @@ class Game():
     #    self.newround = 1
     #    
     #    shuffle(self.wcards)
-        self.threadDetails.s.send("TOPIC %s :Welcome to Chat Against Humanity. Visit http://www.chatagainsthumanity.com for a list of commands.\n" %(self.threadDetails.channel))
+        #self.threadDetails.s.send("TOPIC %s :Welcome to Chat Against Humanity. Visit http://www.chatagainsthumanity.com for a list of commands.\n" %(self.threadDetails.channel))
         
         return "Stopping game"
     def dealCards(self):
@@ -300,42 +301,49 @@ class Game():
                 return player
         return False
 
-    def setTopic(self):
-        self.threadDetails.s.send("TOPIC %s :%s\n" %(self.threadDetails.channel, self.blackcard))
+    #def setTopic(self):
+    #    self.threadDetails.s.send("TOPIC %s :%s\n" %(self.threadDetails.channel, self.blackcard))
 
     def part(self, playername):
-        message = "%s left the game." %playername
-        if len(self.players) -1 < self.minplayers:
-            stop = self.stop()
-            message += " Not enough players to continue, stopping game."
-        else:
-            if self.inprogress:
-                for player in self.players:
-                    if player.username == playername:
-                        if player == self.czar:
-                            if self.playedCards:
-                                for card in self.playedCards:
-                                    owner = card["owner"]
-                                    owner.hand.append(card["card"])
-                            self.playedcards = []
-                            self.blackcard = None
-                            self.newround += 1
-                            self.waitPlayers = 0
-                            self.waitCzar = 0
-                            i = 0
-                            for newplayer in self.players:
-                                if newplayer == self.czar:
-                                    czarid = i
-                                i += 1
-                            czarid +=1
-                            if czarid > len(self.players) -1:
-                                czarid = 0
-                            self.czar = self.players[czarid]
-                        self.players.remove(player)
-
+        cont = False
+        for player in self.players:
+            if player.username == playername:
+                cont = True
+        if cont:
+            message = "%s left the game." %playername
+            if len(self.players) -1 < self.minplayers and self.inprogress:
+                stop = self.stop()
+                message += " Not enough players to continue, stopping game."
             else:
-                for player in self.players:
-                    if player.username == playname:
-                        self.players.remove(player)
+                if self.inprogress:
+                    for player in self.players:
+                        if player.username == playername:
+                            if player == self.czar:
+                                if self.playedCards:
+                                    for card in self.playedCards:
+                                        owner = card["owner"]
+                                        owner.hand.append(card["card"])
+                                self.playedcards = []
+                                self.blackcard = None
+                                self.newround += 1
+                                self.waitPlayers = 0
+                                self.waitCzar = 0
+                                i = 0
+                                for newplayer in self.players:
+                                    if newplayer == self.czar:
+                                        czarid = i
+                                    i += 1
+                                czarid +=1
+                                if czarid > len(self.players) -1:
+                                    czarid = 0
+                                self.czar = self.players[czarid]
+                            self.players.remove(player)
+
+                else:
+                    for player in self.players:
+                        if player.username == playername:
+                            self.players.remove(player)
+        else:
+            message = None
         return message
 
