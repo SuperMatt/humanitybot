@@ -59,11 +59,9 @@ def actioner(g, line, username, channel, gamechannel):
                 messages += [{"message": g.blackcard, "channel": username}]
                 messages += newPlayer.printCards()
 
-    # elif lower == "part":
-    #     for player in g.players:
-    #         if player.username == username:
-    #             g.players.remove(player)
-    #             messages.append({"message": "%s left the game" %username, "channel": gamechannel})
+    elif lower == "part":
+        message = g.part(username)
+        messages += [{"message": message, "channel": gamechannel}]
 
     elif lower == "czar":
         if g.inprogress:
@@ -115,6 +113,7 @@ def gameLogic(g, line, username, channel, gamechannel):
         if currtime > g.starttime:
             g.starttime = None
             g.inprogress = True
+            shuffle(g.players)
             messages.append({"message": "Starting game now!", "channel": gamechannel})
 
     elif g.newround > g.round:
@@ -303,4 +302,40 @@ class Game():
 
     def setTopic(self):
         self.threadDetails.s.send("TOPIC %s :%s\n" %(self.threadDetails.channel, self.blackcard))
+
+    def part(self, playername):
+        message = "%s left the game." %playername
+        if len(self.players) -1 < self.minplayers:
+            stop = self.stop()
+            message += " Not enough players to continue, stopping game."
+        else:
+            if self.inprogress:
+                for player in self.players:
+                    if player.username == playername:
+                        if player == self.czar:
+                            if self.playedCards:
+                                for card in self.playedCards:
+                                    owner = card["owner"]
+                                    owner.hand.append(card["card"])
+                            self.playedcards = []
+                            self.blackcard = None
+                            self.newround += 1
+                            self.waitPlayers = 0
+                            self.waitCzar = 0
+                            i = 0
+                            for newplayer in self.players:
+                                if newplayer == self.czar:
+                                    czarid = i
+                                i += 1
+                            czarid +=1
+                            if czarid > len(self.players) -1:
+                                czarid = 0
+                            self.czar = self.players[czarid]
+                        self.players.remove(player)
+
+            else:
+                for player in self.players:
+                    if player.username == playname:
+                        self.players.remove(player)
+        return message
 
