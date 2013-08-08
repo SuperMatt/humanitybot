@@ -280,7 +280,7 @@ class Game():
     #    self.newround = 1
     #    
     #    shuffle(self.wcards)
-        self.threadDetails.s.send("TOPIC %s :Welcome to Chat Against Humanity. Visit http://cah.supermatt.net for a list of commands.\n" %(self.threadDetails.channel))
+        self.threadDetails.s.send("TOPIC %s :Welcome to Chat Against Humanity. Visit http://www.chatagainsthumanity.com for a list of commands.\n" %(self.threadDetails.channel))
         
         return "Stopping game"
     def dealCards(self):

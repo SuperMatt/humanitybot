@@ -37,10 +37,11 @@ class IRCConnector( threading.Thread):
             print 'Failed to create socket'
             sys.exit()
 
-        remote_ip = socket.gethostbyname(self.host)
-        self.output(remote_ip)
+        #remote_ip = socket.gethostbyname(self.host)
+        #self.output(remote_ip)
 
-        self.s.connect((remote_ip, self.port))
+        #self.s.connect((remote_ip, self.port))
+        self.s.connect((self.host, self.port))
         self.s.setblocking(0)
         message1 = "NICK %s\r\n" %self.botname
         message2 = 'USER %s %s %s :%s\r\n' %(self.identity, self.hostname, self.host, self.realname)
@@ -98,7 +99,7 @@ class IRCConnector( threading.Thread):
                     if channel == self.botname:
                         channel = username
 
-                    if lower == "$kill":
+                    if lower == "$kill" and username == "sprmtt":
                         self.s.send("QUIT :Bot quit\n")
                     elif lower == "$test":
                         self.allmessages.append({"message": "test message", "channel": channel})
@@ -130,7 +131,7 @@ class IRCConnector( threading.Thread):
 
 
 irc_connections = [{
-                        "host": "irc.darkmyst.org",
+                        "host": "50.193.243.45",
                         "port": 6667,
                         "channels": ["#cah"]
                     }]
