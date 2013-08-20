@@ -154,35 +154,43 @@ def gameLogic(g, line, username, channel, gamechannel):
             g.waitCzar = 1
         elif line:
             if g.blacktype == 1:
-                if re.search("^[0-9]+$", line) and not username == g.czar.username:
-                    id = int(line)
-                    if id == 0:
-                        id = 10
-                    id -= 1
-                    if id < 10 and id >= 0:
-                        player = g.getPlayerByName(username)
-                        card = player.hand.pop(id)
-                        messages += [{"message": "Thank you for playing %s" %(card), "channel": player.username}]
-                        g.playedCards.append({"card": card, "owner": player})
+                if re.search("^([0-9]|10)$", line) and not username == g.czar.username:
+                    player = g.getPlayerByName(username)
+                    if player in g.playedPlayers:
+                        messages += [{"message": "You cannot play more than one card", "channel": username}]
+                    else:
+                        g.playedPlayers.append(player)
+                        id = int(line)
+                        if id == 0:
+                            id = 10
+                        id -= 1
+                        if id < 10 and id >= 0:
+                            card = player.hand.pop(id)
+                            messages += [{"message": "Thank you for playing %s" %(card), "channel": player.username}]
+                            g.playedCards.append({"card": card, "owner": player})
             elif g.blacktype == 2:
-                if re.search("^[0-9]+ [0-9]+$", line) and not username == g.czar.username:
-                    ids = line.split()
-                    id1 = int(ids[0])
-                    id2 = int(ids[1])
-                    if id1 == 0:
-                        id1 = 10
-                    id1 -= 1
-                    if id2 == 0:
-                        id2 = 10
-                    id2 -= 1
-                    if id1 < 10 and id1 >= 0 and id2 < 10 and id2 >=0:
-                        player = g.getPlayerByName(username)
-                        card1 = player.hand[id1]
-                        card2 = player.hand[id2]
-                        messages += [{"message": "Thank you for playing %s / %s" %(card1, card2), "channel": player.username}]
-                        g.playedCards.append({"card": "%s / %s" %(card1, card2), "owner": player})
-                        player.hand.remove(card1)
-                        player.hand.remove(card2)
+                if re.search("^([0-9]|10) ([0-9]|10)+$", line) and not username == g.czar.username:
+                    player = g.getPlayerByName(username)
+                    if player in g.playedPlayers:
+                        messages += [{"message": "You cannot play more than one card", "channel": username}]
+                    else:
+                        g.playedPlayers.append(player)
+                        ids = line.split()
+                        id1 = int(ids[0])
+                        id2 = int(ids[1])
+                        if id1 == 0:
+                            id1 = 10
+                        id1 -= 1
+                        if id2 == 0:
+                            id2 = 10
+                        id2 -= 1
+                        if id1 < 10 and id1 >= 0 and id2 < 10 and id2 >=0:
+                            card1 = player.hand[id1]
+                            card2 = player.hand[id2]
+                            messages += [{"message": "Thank you for playing %s / %s" %(card1, card2), "channel": player.username}]
+                            g.playedCards.append({"card": "%s / %s" %(card1, card2), "owner": player})
+                            player.hand.remove(card1)
+                            player.hand.remove(card2)
     elif g.waitCzar > 0:
         if g.waitCzar == 1:
             shuffle(g.playedCards)
@@ -217,6 +225,7 @@ def gameLogic(g, line, username, channel, gamechannel):
                     if czarid > len(g.players) -1:
                         czarid = 0
                     g.czar = g.players[czarid]
+                    g.playedPlayers = []
 
     return messages
 
@@ -257,6 +266,7 @@ class Game():
         self.discardedCards = []
         self.blackcard = None
         self.blacktype = None
+        self.playedPlayers = []
         for card in self.bcards:
             self.allbcards += [{"card": card, "type": 1}]
         for card in self.bcards2:

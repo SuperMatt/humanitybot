@@ -141,7 +141,7 @@ class IRCConnector( threading.Thread):
 
 
 irc_connections = [{
-                        "host": "50.193.243.45",
+                        "host": "irc.darkmyst.org",
                         "port": 6667,
                         "channels": ["#cah"]
                     }]
